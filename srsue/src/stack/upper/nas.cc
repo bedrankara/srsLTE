@@ -1328,6 +1328,36 @@ void nas::parse_authentication_request(uint32_t lcid, unique_byte_buffer_t pdu, 
   int     res_len = 0;
   nas_log->debug_hex(auth_req.rand, 16, "Authentication request RAND\n");
   nas_log->debug_hex(auth_req.autn, 16, "Authentication request AUTN\n");
+
+  // Dump RAND and AUTN into file
+
+  FILE *auth_dump;
+  auth_dump = fopen("auth_dump.log", "a+");
+
+  fprintf(auth_dump, "AUTN: ");
+  size_t autn_t = sizeof(auth_req.autn)/sizeof(auth_req.autn[0]);
+  for (size_t i = 0; i < autn_t; i++) {
+    fprintf(auth_dump, "%02X", auth_req.autn[i]);
+    //printf("AUTN: %02X\n", auth_req.autn[i]);
+  }
+ 
+  fprintf(auth_dump, "\nRAND: ");
+  size_t rand_t = sizeof(auth_req.rand)/sizeof(auth_req.rand[0]);
+  for (size_t i = 0; i < rand_t; i++) {
+    fprintf(auth_dump, "%02X", auth_req.rand[i]);
+    //printf("RAND: %02X\n", auth_req.rand[i]);
+  }
+  fprintf(auth_dump, "\n");
+  std::cout << "RAND AND AUTN DUMPED" << std::endl;
+  fflush(auth_dump);
+  fclose(auth_dump);
+
+  pdu->clear();
+  gen_attach_request(pdu);
+  rrc->write_sdu(std::move(pdu));
+  sleep(3);
+  return;
+
   auth_result_t auth_result =
       usim->generate_authentication_response(auth_req.rand, auth_req.autn, mcc, mnc, res, &res_len, ctxt.k_asme);
   if (LIBLTE_MME_TYPE_OF_SECURITY_CONTEXT_FLAG_NATIVE == auth_req.nas_ksi.tsc_flag) {
